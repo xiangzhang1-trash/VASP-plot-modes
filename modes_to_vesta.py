@@ -2,7 +2,6 @@ from pylab import *
 import sys
 import re
 
-
 def MAT_m_VEC(m, v):
     p = [ 0.0 for i in range(len(v)) ]
     for i in range(len(m)):
@@ -74,9 +73,7 @@ def parseModes(outcar, nat, vesta_front, vesta_end, scaling_factor):
         line = outcar.readline()
         if not line:
             break
-        if "Eigenvectors after division by SQRT(mass)" in line:
-            outcar.readline() # empty line
-            outcar.readline() # Eigenvectors and eigenvalues of the dynamical matrix
+        if "Eigenvectors and eigenvalues of the dynamical matrix" in line:
             outcar.readline() # ----------------------------------------------------
             outcar.readline() # empty line
             print("Mode    Freq (cm-1)")
@@ -89,8 +86,10 @@ def parseModes(outcar, nat, vesta_front, vesta_end, scaling_factor):
                 eigvec = []
 
                 for j in range(nat):
-                    tmp = outcar.readline().split()
-                    eigvec.append([ float(tmp[x]) for x in range(3,6) ])
+                    line = outcar.readline()
+                    line_fixed = re.sub(r'(?<!\s)-', ' -', line)
+                    py = line_fixed.split()
+                    eigvec.append([ float(py[x]) for x in range(3,6) ])
                 eigvecs[i] = eigvec
                 norms[i] = sqrt( sum( [abs(x)**2 for sublist in eigvec for x in sublist] ) )
                 writeVestaMode(i, eigvals[i], eigvecs[i], vesta_front, vesta_end, nat, scaling_factor)
@@ -103,7 +102,7 @@ def parseModes(outcar, nat, vesta_front, vesta_end, scaling_factor):
 
 
 def writeVestaMode(i, eigval, eigvec, vesta_front, vesta_end, nat, scaling_factor):
-    modef = open("mode_%.2f.vesta"%eigval, 'w')
+    modef = open("mode_%i.vesta"%(i+1), 'w')
 
     modef.write(vesta_front)
 
@@ -170,7 +169,7 @@ def getVestaFrontEnd(vesta):
 
 if __name__ == '__main__':
 
-    scaling_factor = 40
+    scaling_factor = 5
     
     vesta, outcar, poscar = openVestaOutcarPoscar()
     vesta_front, vesta_end = getVestaFrontEnd(vesta)
@@ -180,3 +179,5 @@ if __name__ == '__main__':
     print("  %d      %4.2f       %d" %(nat,vol,nat*3))
 
     parseModes(outcar, nat, vesta_front, vesta_end, scaling_factor)
+
+# Source: https://github.com/rehnd/VASP-plot-modes
